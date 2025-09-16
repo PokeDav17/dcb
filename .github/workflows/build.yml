@@ -1,21 +1,26 @@
-name: Aggiorna Index
+name: Aggiorna index statico
+
 on:
   push:
     paths:
       - 'ebooks/**'
+
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
-    - name: Ricrea index.html
+
+    - name: Genera index.html
       run: |
-        echo '<!DOCTYPE html><html lang="it"><head><meta charset="UTF-8"><title>Libreria EPUB</title></head><body><h1>Libreria EPUB</h1><ul>' > index.html
+        echo '<!DOCTYPE html><html lang="it"><head><meta charset="UTF-8"><title>Libreria EPUB</title></head><body>' > index.html
+        echo '<h1>Libreria EPUB</h1><ul>' >> index.html
         for f in ebooks/*.epub; do
           name=$(basename "$f" .epub)
           echo "<li><a href=\"$f\">$name</a></li>" >> index.html
         done
         echo '</ul></body></html>' >> index.html
+
     - name: Commit e push
       run: |
         git config --local user.email "action@github.com"
