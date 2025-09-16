@@ -1,109 +1,34 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>La mia libreria ePub</title>
-  <style>
-    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;margin:0;padding:16px;background:#f7f8fb;color:#111}
-    header{display:flex;gap:12px;align-items:center;justify-content:space-between}
-    h1{font-size:1.2rem;margin:0}
-    #search{padding:8px;border-radius:8px;border:1px solid #ddd;width:100%;max-width:320px}
-    table{width:100%;border-collapse:collapse;margin-top:12px;background:white;border-radius:8px;overflow:hidden}
-    th,td{padding:10px 12px;text-align:left;border-bottom:1px solid #f1f1f4}
-    th{background:#fafafa;font-weight:600}
-    a.btn{background:#2563eb;color:#fff;padding:6px 10px;border-radius:6px;text-decoration:none;font-weight:600}
-    .note{color:#666;margin-top:10px}
-    @media (max-width:520px){ th:nth-child(2), td:nth-child(2){display:none} }
-  </style>
+<meta charset="UTF-8">
+<title>La mia libreria</title>
 </head>
 <body>
-  <header>
-    <h1>La mia libreria</h1>
-    <input id="search" placeholder="Cerca titolo..." />
-  </header>
-
-  <div id="note" class="note">Caricamento…</div>
-
-  <table id="tbl" style="display:none">
-    <thead><tr><th>Titolo</th><th>Dimensione</th><th></th></tr></thead>
-    <tbody id="lista"></tbody>
-  </table>
-
+<h1>Libreria EPUB</h1>
+<ul id="lista"></ul>
 <script>
-let repoOwner = "PokeDav17";   // <-- sostituisci
-let repoName  = "dcb";  // <-- sostituisci
-const ebooksPath = "ebooks";      // cartella con gli .epub
+const repoOwner = "PokeDav17";
+const repoName  = "dcb";
+const path = "ebooks";
 
-// Autodetect (se lasci segnaposto e sei su GitHub Pages)
-(function autoDetect(){
-  try{
-    if(repoOwner.includes("TUO-") || repoName.includes("NOME-")){
-      const host = location.hostname; // es. username.github.io
-      if(host.endsWith("github.io")){
-        if(repoOwner.includes("TUO-")) repoOwner = host.split('.')[0];
-        const p = location.pathname.replace(/^\/|\/$/g,'').split('/');
-        if(p[0] && repoName.includes("NOME-")) repoName = p[0];
-      }
-    }
-  }catch(e){}
-})();
-
-function niceSize(bytes){
-  if(!bytes) return "—";
-  const u=["B","KB","MB","GB"];
-  let i=0;
-  while(bytes>=1024 && i<u.length-1){ bytes/=1024; i++;}
-  return (bytes<10 && i>0 ? bytes.toFixed(2) : bytes<100 && i>0 ? bytes.toFixed(1) : Math.round(bytes)) + " " + u[i];
-}
-
-async function caricaLista(){
-  const note = document.getElementById("note");
-  const url = `https://api.github.com/repos/${repoOwner}/${repoName}/contents/${ebooksPath}`;
-  try{
-    const res = await fetch(url);
-    if(res.status === 404){ note.textContent = "Cartella non trovata. Controlla 'ebooks' e i nomi del repo/utente."; return; }
-    if(res.status === 403){ note.textContent = "Accesso negato o rate limit API GitHub superato."; return; }
-    const files = await res.json();
-    if(!Array.isArray(files)){ note.textContent = "Nessun file o risposta inattesa dall'API."; return; }
-    const lista = document.getElementById("lista");
-    lista.innerHTML = "";
-    const epubs = files.filter(f => f.type === "file" && f.name.toLowerCase().endsWith(".epub"));
-    if(epubs.length === 0){ note.textContent = "Nessun .epub nella cartella 'ebooks'."; return; }
-    epubs.sort((a,b)=> a.name.localeCompare(b.name, undefined, {sensitivity:'base'}));
-    for(const f of epubs){
-      const tr = document.createElement("tr");
-      const tTitle = document.createElement("td");
-      tTitle.textContent = f.name.replace(/\.epub$/i,"");
-      const tSize = document.createElement("td");
-      tSize.textContent = niceSize(f.size || 0);
-      const tDl = document.createElement("td");
+async function caricaLista() {
+  const url = `https://api.github.com/repos/${repoOwner}/${repoName}/contents/${path}`;
+  const res = await fetch(url);
+  const files = await res.json();
+  const lista = document.getElementById("lista");
+  files.forEach(f => {
+    if(f.name.endsWith(".epub")){
+      const li = document.createElement("li");
       const a = document.createElement("a");
-      a.className = "btn";
       a.href = f.download_url;
-      a.textContent = "Scarica";
-      a.setAttribute("download", f.name);
-      tDl.appendChild(a);
-      tr.appendChild(tTitle); tr.appendChild(tSize); tr.appendChild(tDl);
-      lista.appendChild(tr);
+      a.textContent = f.name.replace(".epub","");
+      li.appendChild(a);
+      lista.appendChild(li);
     }
-    document.getElementById("tbl").style.display = "";
-    note.style.display = "none";
-  }catch(err){
-    document.getElementById("note").textContent = "Errore: " + err.message;
-  }
-}
-
-caricaLista();
-
-// filtro ricerca
-document.getElementById("search").addEventListener("input", (e)=>{
-  const q = e.target.value.toLowerCase().trim();
-  document.querySelectorAll("#lista tr").forEach(tr=>{
-    const txt = tr.firstChild.textContent.toLowerCase();
-    tr.style.display = txt.includes(q) ? "" : "none";
   });
-});
+}
+caricaLista();
 </script>
 </body>
 </html>
